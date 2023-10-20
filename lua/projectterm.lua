@@ -114,9 +114,9 @@ local function toggle(cmd, keep_alive)
       if exit_code == 0 then
         local buffer_name = "ProjectTerm output"
         local output_bufnr = get_buffer_from_name(buffer_name)
+        local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
+        vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
         if not keep_alive then
-          local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
-          vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
           vim.cmd("bdelete " .. term.bufnr)
         end
         msg = "ProjectTerm execution successful. Process output written to buffer *ProjectTerm output*."
