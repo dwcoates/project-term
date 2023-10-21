@@ -35,7 +35,7 @@ local function clear_debug_buffer()
 end
 
 local function print_debug(text)
-  local bufnr = get_buffer_from_name(debug_buffer_name) 
+  local bufnr = get_buffer_from_name(debug_buffer_name)
   local line_count = vim.api.nvim_buf_line_count(bufnr)
   vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, {text})
 end
@@ -80,10 +80,10 @@ local function get_build_commands(filepath)
 end
 
 local function remove_terminal_process_exited_msg(bufnr)
-  local pattern = "%[Process exited %-?%d+%]" 
+  local pattern = "%[Process exited %-?%d+%]"
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local filtered_lines = {}
-  for x, line in ipairs(lines) do
+  for _, line in ipairs(lines) do
     if not string.match(line, pattern) then
       table.insert(filtered_lines, line)
     end
@@ -91,6 +91,7 @@ local function remove_terminal_process_exited_msg(bufnr)
   vim.api.nvim_buf_set_option(bufnr, 'modifiable', true)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 end
+
 
 local function toggle(cmd, keep_alive)
   local term = Terminal:new({
@@ -109,7 +110,7 @@ local function toggle(cmd, keep_alive)
       -- FIXME: This isn't currently working for some reason
       remove_terminal_process_exited_msg(term.bufnr)
     end,
-    on_exit = function(term, job, exit_code, name)
+    on_exit = function(term, _, exit_code, _)
       local msg = ""
       if exit_code == 0 then
         local buffer_name = "ProjectTerm output"
@@ -129,7 +130,7 @@ local function toggle(cmd, keep_alive)
   term:toggle()
 end
 
-function command_exists_in_commands(cmd, commands_text)
+local function command_exists_in_commands(cmd, commands_text)
   for target_line in commands_text:gmatch("[^\r\n]+") do
     if target_line == cmd then
       return true
@@ -163,6 +164,7 @@ end
 
 local function handle_exit(prompt_bufnr, savefile, use_current_line)
   local cmd = ""
+  print(vim.inspect(action_state.get_current_history()))
   if use_current_line or action_state.get_selected_entry() == nil then
     cmd = action_state.get_current_line()
     print_debug("Using current line: '" .. cmd .. "'.")
@@ -176,7 +178,7 @@ local function handle_exit(prompt_bufnr, savefile, use_current_line)
 end
 
 local function show_custom_picker(lines, opts, savefile)
-  local val = pickers.new(opts, {
+  pickers.new(opts, {
     prompt_title = "ProjectTerm Search Comands",
     finder = finders.new_table {
       results = lines,
@@ -198,7 +200,7 @@ local function show_custom_picker(lines, opts, savefile)
   }):find()
 end
 
-function projectterm(keep_alive)
+local function projectterm(_)
   clear_debug_buffer()
   local commands_file = get_project_root() .. "/.projectterm_commands"
   print_debug("Running projectterm() from '" .. commands_file .. "'")
