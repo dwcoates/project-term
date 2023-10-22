@@ -196,7 +196,7 @@ local function show_custom_picker(lines, opts, savefile)
   }):find()
 end
 
-local function projectterm(_)
+function ProjectTerm(_)
   clear_debug_buffer()
   local commands_file = get_project_root() .. "/.projectterm_commands"
   print_debug("Running projectterm() from '" .. commands_file .. "'")
@@ -208,8 +208,8 @@ end
 
 local M = {}
 
-M.projectterm = projectterm
+M.projectterm = ProjectTerm
 
-vim.cmd("command! ProjectTerm lua projectterm()")
+vim.cmd("command! ProjectTerm lua ProjectTerm()")
 
 return M
