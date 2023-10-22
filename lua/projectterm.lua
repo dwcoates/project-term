@@ -92,6 +92,20 @@ local function remove_terminal_process_exited_msg(bufnr)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 end
 
+local function remove_from_text(text, target_line)
+    local lines = {}
+    for line in text:gmatch("[^\r\n]+") do
+        table.insert(lines, line)
+    end
+    for i, line in ipairs(lines) do
+        if line == target_line then
+            table.remove(lines, i)
+            break
+        end
+    end
+    return table.concat(lines)
+end
+
 local function command_exists_in_commands(cmd, commands_text)
   for target_line in commands_text:gmatch("[^\r\n]+") do
     if target_line == cmd then
@@ -110,8 +124,8 @@ local function ensure_cmd_in_commands_file(filename, cmd)
   local content = f:read("*all")
   f:close()
   if command_exists_in_commands(cmd, content) then
-    print_debug("Command known, saving to commands file skipped.")
-    return
+    print_debug("Command known, putting at top of list.")
+    content = remove_from_text(content, cmd)
   end
   content = cmd .. "\n" .. content
   f = io.open(filename, "w")
