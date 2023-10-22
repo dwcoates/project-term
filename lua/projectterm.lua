@@ -190,6 +190,7 @@ local function show_custom_picker(lines, opts, savefile)
       map('i', '<CR>', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile) end)
       map('n', '<CR>', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile) end)
       map('n', '<leader>\\', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile, true) end)
+      map('n', 'gf', function () vim.api.nvim_feedkeys(':wincmd p<CR>', 'n', true) end)
       return true -- Let Telescope continue attaching other mappings as well
     end,
   }):find()
