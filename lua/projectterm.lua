@@ -124,7 +124,7 @@ local function ensure_cmd_in_commands_file(filename, cmd)
   f:close()
 end
 
-local function handle_exit(prompt_bufnr, savefile, use_current_line)
+local function handle_exit(prompt_bufnr, savefile, use_current_line, keep_alive)
   print_debug("Handling picker exit...")
   local cmd = ""
   print(vim.inspect(action_state.get_current_history()))
@@ -161,7 +161,10 @@ local function handle_exit(prompt_bufnr, savefile, use_current_line)
         local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
         vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
         if not keep_alive then
-          vim.cmd("bdelete " .. term.bufnr)
+          print_debug("Deleting term buffer.")
+          vim.cmd("bdelete! " .. term.bufnr)
+        else
+          print_debug("Persisting term buffer.")
         end
         msg = "ProjectTerm execution successful. Process output written to buffer *ProjectTerm output*."
       else
@@ -190,7 +193,7 @@ local function show_custom_picker(lines, opts, savefile)
       map('i', '<CR>', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile) end)
       map('n', '<CR>', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile) end)
       map('n', '<leader>\\', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile, true) end)
-      map('n', 'gf', function () 
+      map('n', 'gf', function ()
         print_debug("called gf")
         vim.cmd('wincmd p')
       end)
