@@ -124,10 +124,10 @@ local function ensure_cmd_in_commands_file(filename, cmd)
   f:close()
 end
 
-local function handle_exit(prompt_bufnr, savefile, use_current_line, keep_alive)
+local function handle_project_term_telescope_exit(prompt_bufnr, savefile, use_current_line, keep_alive)
   print_debug("Handling picker exit...")
   local cmd = ""
-  print(vim.inspect(action_state.get_current_history()))
+  -- print(vim.inspect(action_state.get_current_history()))
   if use_current_line or action_state.get_selected_entry() == nil then
     cmd = action_state.get_current_line()
     print_debug("Using current line: '" .. cmd .. "'.")
@@ -151,26 +151,27 @@ local function handle_exit(prompt_bufnr, savefile, use_current_line, keep_alive)
     end,
     on_close = function(term)
       -- FIXME: This isn't currently working for some reason
+      vim.cmd("bdelete! " .. term.bufnr)
       remove_terminal_process_exited_msg(term.bufnr)
     end,
     on_exit = function(term, _, exit_code, _)
       local msg = ""
+      local buffer_name = "ProjectTerm output"
+      local output_bufnr = get_buffer_from_name(buffer_name)
+      local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
+      vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
       if exit_code == 0 then
-        local buffer_name = "ProjectTerm output"
-        local output_bufnr = get_buffer_from_name(buffer_name)
-        local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
-        vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
         if not keep_alive then
           print_debug("Deleting term buffer.")
           vim.cmd("bdelete! " .. term.bufnr)
         else
           print_debug("Persisting term buffer.")
         end
-        msg = "ProjectTerm execution successful. Process output written to buffer *ProjectTerm output*."
+        msg = "ProjectTerm execution successful."
       else
         msg = "ProjectTerm execution failed with exit code " .. exit_code .. "."
       end
-      print(msg .. " Debug logs written to buffer *" .. debug_buffer_name .. "*.")
+      print(msg .. " Process output written to buffer *ProjectTerm output*. Debug logs written to buffer *" .. debug_buffer_name .. "*.")
     end,
   }):toggle()
 end
@@ -190,9 +191,9 @@ local function show_custom_picker(lines, opts, savefile)
     },
     sorter = conf.generic_sorter(opts),
     attach_mappings = function(_, map) -- Ensure you use the correct function name
-      map('i', '<CR>', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile) end)
-      map('n', '<CR>', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile) end)
-      map('n', '<leader>\\', function (prompt_bufnr) handle_exit(prompt_bufnr, savefile, true) end)
+      map('i', '<CR>', function (prompt_bufnr) handle_project_term_telescope_exit(prompt_bufnr, savefile) end)
+      map('n', '<CR>', function (prompt_bufnr) handle_project_term_telescope_exit(prompt_bufnr, savefile) end)
+      map('n', '<leader>\\', function (prompt_bufnr) handle_project_term_telescope_exit(prompt_bufnr, savefile, true) end)
       map('n', 'gf', function ()
         print_debug("called gf")
         vim.cmd('wincmd p')
