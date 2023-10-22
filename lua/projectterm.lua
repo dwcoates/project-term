@@ -92,44 +92,6 @@ local function remove_terminal_process_exited_msg(bufnr)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, filtered_lines)
 end
 
-
-local function toggle(cmd, keep_alive)
-  local term = Terminal:new({
-    cmd = cmd,
-    dir = get_project_root(),
-    hidden = false,
-    shading_factor = '90',
-    close_on_exit = false,
-    direction = 'horizontal',
-    size = 25,
-    on_open = function(term)
-      vim.cmd("startinsert!")
-      vim.api.nvim_buf_set_keymap(term.bufnr, "n", "q", "<cmd>close<CR>", {noremap = true, silent = true})
-    end,
-    on_close = function(term)
-      -- FIXME: This isn't currently working for some reason
-      remove_terminal_process_exited_msg(term.bufnr)
-    end,
-    on_exit = function(term, _, exit_code, _)
-      local msg = ""
-      if exit_code == 0 then
-        local buffer_name = "ProjectTerm output"
-        local output_bufnr = get_buffer_from_name(buffer_name)
-        local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
-        vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
-        if not keep_alive then
-          vim.cmd("bdelete " .. term.bufnr)
-        end
-        msg = "ProjectTerm execution successful. Process output written to buffer *ProjectTerm output*."
-      else
-        msg = "ProjectTerm execution failed with exit code " .. exit_code .. "."
-      end
-      print(msg .. " Debug logs written to buffer *" .. debug_buffer_name .. "*.")
-    end,
-  })
-  term:toggle()
-end
-
 local function command_exists_in_commands(cmd, commands_text)
   for target_line in commands_text:gmatch("[^\r\n]+") do
     if target_line == cmd then
@@ -163,6 +125,7 @@ local function ensure_cmd_in_commands_file(filename, cmd)
 end
 
 local function handle_exit(prompt_bufnr, savefile, use_current_line)
+  print_debug("Handling picker exit...")
   local cmd = ""
   print(vim.inspect(action_state.get_current_history()))
   if use_current_line or action_state.get_selected_entry() == nil then
@@ -174,7 +137,39 @@ local function handle_exit(prompt_bufnr, savefile, use_current_line)
   end
   ensure_cmd_in_commands_file(savefile, cmd)
   actions.close(prompt_bufnr)
-  toggle(cmd, false)
+  Terminal:new({
+    cmd = cmd,
+    dir = get_project_root(),
+    hidden = false,
+    shading_factor = '90',
+    close_on_exit = false,
+    direction = 'horizontal',
+    size = 25,
+    on_open = function(term)
+      vim.cmd("startinsert!")
+      vim.api.nvim_buf_set_keymap(term.bufnr, "n", "q", "<cmd>close<CR>", {noremap = true, silent = true})
+    end,
+    on_close = function(term)
+      -- FIXME: This isn't currently working for some reason
+      remove_terminal_process_exited_msg(term.bufnr)
+    end,
+    on_exit = function(term, _, exit_code, _)
+      local msg = ""
+      if exit_code == 0 then
+        local buffer_name = "ProjectTerm output"
+        local output_bufnr = get_buffer_from_name(buffer_name)
+        local content = vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false)
+        vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, content)
+        if not keep_alive then
+          vim.cmd("bdelete " .. term.bufnr)
+        end
+        msg = "ProjectTerm execution successful. Process output written to buffer *ProjectTerm output*."
+      else
+        msg = "ProjectTerm execution failed with exit code " .. exit_code .. "."
+      end
+      print(msg .. " Debug logs written to buffer *" .. debug_buffer_name .. "*.")
+    end,
+  }):toggle()
 end
 
 local function show_custom_picker(lines, opts, savefile)
